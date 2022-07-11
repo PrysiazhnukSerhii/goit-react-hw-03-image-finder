@@ -1,6 +1,4 @@
 export function ImageGalleryItem({ arrayPictures }) {
-  console.log(arrayPictures);
-
   let peintedPictures = arrayPictures.map(e => {
     return (
       <li className="imageGalleryItem" key={e.id}>
