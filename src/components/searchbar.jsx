@@ -14,11 +14,6 @@ export class Searchbar extends Component {
   onSubmitForm = e => {
     e.preventDefault();
 
-    if (this.state.carrentValue.trim() === '') {
-      alert('Куда бля');
-      return;
-    }
-
     this.props.onSubmit(this.state.carrentValue);
 
     this.reset();

@@ -1,6 +1,8 @@
+import { TailSpin } from 'react-loader-spinner';
 import { Component } from 'react';
 import { ImageGalleryItem } from './imageGalleryItem';
 import { ButtonMore } from './button';
+import { Modal } from './modal';
 
 // "idle" - стоїть нічого не робить
 // 'pending' -  очікується виконання
@@ -13,6 +15,7 @@ export class ImageGallery extends Component {
     page: 1,
     status: 'idle',
     error: null,
+    modal: null,
   };
 
   requestFetch = (name, page) => {
@@ -21,23 +24,27 @@ export class ImageGallery extends Component {
     ).then(respons => respons.json());
   };
 
+  resetModal = () => {
+    this.setState({ modal: null });
+  };
+
+  loadMore = () => {
+    this.setState(prevState => ({ page: prevState.page + 1 }));
+  };
+
   componentDidUpdate(prevProps, prevState) {
-    if (prevProps.serchName !== this.props.serchName) {
+    const { serchName } = this.props;
+    const { page } = this.state;
+    if (prevProps.serchName !== serchName) {
       this.setState({ status: 'pending', page: 1 });
 
-      // fetch(
-      //   `https://pixabay.com/api/?q=${this.props.serchName}&page=${this.props.page}&key=27562603-8a4226043483e253e97fc4251&image_type=photo&orientation=horizontal&per_page=12`
-      // )
-      //   .then(respons => respons.json())
-      this.requestFetch(this.props.serchName, 1)
+      this.requestFetch(serchName, 1)
         .then(arrayPictures => {
           if (arrayPictures.hits.length < 1) {
-            return Promise.reject(
-              new Error(`Can't find: "${this.props.serchName}"`)
-            );
+            return Promise.reject(new Error(`Can't find: "${serchName}"`));
           }
 
-          this.setState(prevState => ({
+          this.setState(() => ({
             arrayPictures: arrayPictures.hits,
             status: 'resolved',
           }));
@@ -47,57 +54,63 @@ export class ImageGallery extends Component {
         });
     }
 
-    if (prevState.page !== this.state.page) {
-      this.requestFetch(this.props.serchName, this.state.page + 1).then(
-        arrayPictures => {
-          this.setState(prevState => {
-            console.log(prevState.arrayPictures);
-            console.log(arrayPictures.hits);
-            return {
-              arrayPictures: [
-                ...prevState.arrayPictures,
-                ...arrayPictures.hits,
-              ],
-            };
-          });
-        }
-      );
+    if (prevState.page !== page) {
+      this.requestFetch(serchName, page + 1).then(arrayPictures => {
+        console.log(page);
+        this.setState(prevState => {
+          return {
+            arrayPictures: [...prevState.arrayPictures, ...arrayPictures.hits],
+          };
+        });
+      });
     }
   }
 
-  loadMore = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
-  };
+  componentDidMount() {
+    window.addEventListener('click', e => {
+      const { classList, id } = e.target;
 
-  // onClickMore = () => {
-  //   this.requestFetch(this.props.serchName, this.state.page + 1).then(
-  //     arrayPictures => {
-  //       this.setState(prevState => {
-  //         return {
-  //           arrayPictures: [...prevState.arrayPictures, ...arrayPictures.hits],
-  //           page: this.state.page + 1,
-  //         };
-  //       });
-  //     }
-  //   );
-  // };
+      if (classList.contains('overlay')) {
+        this.resetModal();
+        return;
+      }
+
+      if (!classList.contains('imageGalleryItem-image')) {
+        return;
+      }
+
+      let result = this.state.arrayPictures.filter(
+        information => information.id === Number(id)
+      );
+
+      this.setState({ modal: result });
+    });
+
+    window.addEventListener('keydown', e => {
+      if (e.code === 'Escape') {
+        this.resetModal();
+      }
+    });
+  }
 
   render() {
-    if (this.state.status === 'pending') {
-      return <h2>Іде загрузка</h2>;
+    const { status, arrayPictures, modal, error } = this.state;
+    if (status === 'pending') {
+      return <TailSpin />;
     }
 
-    if (this.state.status === 'rejected') {
-      return <h2>{this.state.error.message}</h2>;
+    if (status === 'rejected') {
+      return <h2>{error.message}</h2>;
     }
 
-    if (this.state.status === 'resolved') {
+    if (status === 'resolved') {
       return (
         <>
           <ul className="imageGallery">
-            <ImageGalleryItem arrayPictures={this.state.arrayPictures} />
+            <ImageGalleryItem arrayPictures={arrayPictures} />
           </ul>
           <ButtonMore onClick={this.loadMore} />
+          {modal && <Modal picture={modal} />}
         </>
       );
     }
