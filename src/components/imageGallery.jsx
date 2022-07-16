@@ -3,7 +3,7 @@ import { Component } from 'react';
 import { ImageGalleryItem } from './imageGalleryItem';
 import { ButtonMore } from './button';
 import { Modal } from './modal';
-import { getImages } from './services';
+import { getImages } from '../services';
 
 export class ImageGallery extends Component {
   state = {
